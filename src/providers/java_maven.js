@@ -88,7 +88,7 @@ export default class Java_maven extends Base_java {
 		}
 
 		// create dependency graph in a temp file
-		let tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'exhort_'))
+		let tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'trustify_da_'))
 		let tmpDepTree = path.join(tmpDir, 'mvn_deptree.txt')
 		// build initial command (dot outputType is not available for verbose mode)
 		let depTreeCmdArgs = ['-q', 'org.apache.maven.plugins:maven-dependency-plugin:3.6.0:tree',

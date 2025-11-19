@@ -5,7 +5,7 @@ import * as path from "path";
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 
-import exhort from './index.js'
+import client from './index.js'
 
 
 // command for component analysis take manifest type and content
@@ -22,7 +22,7 @@ const component = {
 	),
 	handler: async args => {
 		let manifestName = args['/path/to/manifest']
-		let res = await exhort.componentAnalysis(manifestName)
+		let res = await client.componentAnalysis(manifestName)
 		console.log(JSON.stringify(res, null, 2))
 	}
 }
@@ -50,7 +50,7 @@ const validateToken = {
 			let tokenValue = args['tokenValue'].trim()
 			opts[`TRUSTIFY_DA_${tokenProvider}_TOKEN`] = tokenValue
 		}
-		let res = await exhort.validateToken(opts)
+		let res = await client.validateToken(opts)
 		console.log(res)
 	}
 }
@@ -87,7 +87,7 @@ const image = {
 		}
 		let html = args['html']
 		let summary = args['summary']
-		let res = await exhort.imageAnalysis(imageRefs, html)
+		let res = await client.imageAnalysis(imageRefs, html)
 		if(summary && !html) {
 			let summaries = {}
 			for (let [imageRef, report] of Object.entries(res)) {
@@ -144,7 +144,7 @@ const stack = {
 		let summary = args['summary']
 		let theProvidersSummary = new Map();
 		let theProvidersObject ={}
-		let res = await exhort.stackAnalysis(manifest, html)
+		let res = await client.stackAnalysis(manifest, html)
 		if(summary)
 		{
 			for (let provider in res.providers ) {

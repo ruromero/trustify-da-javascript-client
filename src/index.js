@@ -85,35 +85,27 @@ function readAndPrintVersionFromPackageJson() {
 }
 
 /**
- * This function is used to determine exhort theUrl backend according to the following logic:
- * If TRUSTIFY_DA_DEV_MODE = true, then take the value of the EXHORT BACKEND URL of dev/staging environment in such a way:
- * take it as environment variable if exists, otherwise, take it from opts object if exists, otherwise, use the hardcoded default of DEV environment.
- * If TRUSTIFY_DA_DEV_MODE = false , then select the production theUrl of EXHORT Backend, which is hardcoded.
- * TRUSTIFY_DA_DEV_MODE evaluated in the following order and selected when it finds it first:
+ * This function is used to determine the Trustify DA backend URL.
+ * The TRUSTIFY_DA_BACKEND_URL is evaluated in the following order and selected when it finds it first:
  * 1. Environment Variable
  * 2. (key,value) from opts object
- * 3. Default False ( points to production URL )
+ * If TRUSTIFY_DA_BACKEND_URL is not set, the function will throw an error.
  * @param {{TRUSTIFY_DA_DEBUG?: string | undefined; TRUSTIFY_DA_BACKEND_URL?: string | undefined}} [opts={}]
- * @return {string} - The selected exhort backend
+ * @return {string} - The selected Trustify DA backend URL
+ * @throws {Error} if TRUSTIFY_DA_BACKEND_URL is unset
  * @private
  */
-export function selectExhortBackend(opts = {}) {
+export function selectTrustifyDABackend(opts = {}) {
 	if (getCustom("TRUSTIFY_DA_DEBUG", "false", opts) === "true") {
 		readAndPrintVersionFromPackageJson();
 	}
 
-	let url;
-	if (getCustom('TRUSTIFY_DA_DEV_MODE', 'false', opts) === 'true') {
-		url = getCustom('DEV_TRUSTIFY_DA_BACKEND_URL', undefined, opts);
-	} else {
-		url = getCustom('TRUSTIFY_DA_BACKEND_URL', undefined, opts);
-	}
-
+	let url = getCustom('TRUSTIFY_DA_BACKEND_URL', null, opts);
 	if (!url) {
 		throw new Error(`TRUSTIFY_DA_BACKEND_URL is unset`)
 	}
 
-	logOptionsAndEnvironmentsVariables("Chosen exhort backend URL:", url)
+	logOptionsAndEnvironmentsVariables("Chosen Trustify DA backend URL:", url)
 
 	return url;
 }
@@ -147,7 +139,7 @@ export function selectExhortBackend(opts = {}) {
  * 		or backend request failed
  */
 async function stackAnalysis(manifest, html = false, opts = {}) {
-	const theUrl = selectExhortBackend(opts)
+	const theUrl = selectTrustifyDABackend(opts)
 	fs.accessSync(manifest, fs.constants.R_OK) // throws error if file unreadable
 	let provider = match(manifest, availableProviders) // throws error if no matching provider
 	return await analysis.requestStack(provider, manifest, theUrl, html, opts) // throws error request sending failed
@@ -161,7 +153,7 @@ async function stackAnalysis(manifest, html = false, opts = {}) {
  * @throws {Error} if no matching provider, failed to get create content, or backend request failed
  */
 async function componentAnalysis(manifest, opts = {}) {
-	const theUrl = selectExhortBackend(opts)
+	const theUrl = selectTrustifyDABackend(opts)
 	fs.accessSync(manifest, fs.constants.R_OK)
 	opts["manifest-type"] = path.basename(manifest)
 	let provider = match(manifest, availableProviders) // throws error if no matching provider
@@ -197,7 +189,7 @@ async function componentAnalysis(manifest, opts = {}) {
  * 		or backend request failed
  */
 async function imageAnalysis(imageRefs, html = false, opts = {}) {
-	const theUrl = selectExhortBackend(opts)
+	const theUrl = selectTrustifyDABackend(opts)
 	return await analysis.requestImages(imageRefs, theUrl, html, opts)
 }
 
@@ -208,6 +200,6 @@ async function imageAnalysis(imageRefs, html = false, opts = {}) {
  * @throws {Error} if the backend request failed.
  */
 async function validateToken(opts = {}) {
-	const theUrl = selectExhortBackend(opts)
+	const theUrl = selectTrustifyDABackend(opts)
 	return await analysis.validateToken(theUrl, opts) // throws error request sending failed
 }

@@ -18,7 +18,7 @@ const rhdaPackageManagerHeader = "rhda-pkg-manager"
 /**
  * Adds proxy agent configuration to fetch options if a proxy URL is specified
  * @param {RequestInit} options - The base fetch options
- * @param {import("index.js").Options} opts - The exhort options that may contain proxy configuration
+ * @param {import("index.js").Options} opts - The trustify DA options that may contain proxy configuration
  * @returns {RequestInit} The fetch options with proxy agent if applicable
  */
 function addProxyAgent(options, opts) {
@@ -47,7 +47,7 @@ async function requestStack(provider, manifest, url, html = false, opts = {}) {
 	let startTime = new Date()
 	let endTime
 	if (process.env["TRUSTIFY_DA_DEBUG"] === "true") {
-		console.log("Starting time of sending stack analysis request to exhort server= " + startTime)
+		console.log("Starting time of sending stack analysis request to the dependency analytics server= " + startTime)
 	}
 	opts[rhdaPackageManagerHeader.toUpperCase().replaceAll("-", "_")] = provided.ecosystem
 
@@ -80,15 +80,15 @@ async function requestStack(provider, manifest, url, html = false, opts = {}) {
 				console.log("Unique Identifier associated with this request - ex-request-id=" + exRequestId)
 			}
 			endTime = new Date()
-			console.log("Response body received from exhort server : " + EOL + EOL)
+			console.log("Response body received from Trustify DA backend server : " + EOL + EOL)
 			console.log(console.log(JSON.stringify(result, null, 4)))
-			console.log("Ending time of sending stack analysis request to exhort server= " + endTime)
+			console.log("Ending time of sending stack analysis request to Trustify DA backend server= " + endTime)
 			let time = (endTime - startTime) / 1000
 			console.log("Total Time in seconds: " + time)
 
 		}
 	} else {
-		throw new Error(`Got error response from exhort backend - http return code : ${resp.status},  error message =>  ${await resp.text()}`)
+		throw new Error(`Got error response from Trustify DA backend - http return code : ${resp.status},  error message =>  ${await resp.text()}`)
 	}
 
 	return Promise.resolve(result)
@@ -109,7 +109,7 @@ async function requestComponent(provider, manifest, url, opts = {}) {
 	opts["source-manifest"] = ""
 	opts[rhdaOperationTypeHeader.toUpperCase().replaceAll("-", "_")] = "component-analysis"
 	if (process.env["TRUSTIFY_DA_DEBUG"] === "true") {
-		console.log("Starting time of sending component analysis request to exhort server= " + new Date())
+		console.log("Starting time of sending component analysis request to Trustify DA backend server= " + new Date())
 	}
 	opts[rhdaPackageManagerHeader.toUpperCase().replaceAll("-", "_")] = provided.ecosystem
 
@@ -137,14 +137,14 @@ async function requestComponent(provider, manifest, url, opts = {}) {
 			if (exRequestId) {
 				console.log("Unique Identifier associated with this request - ex-request-id=" + exRequestId)
 			}
-			console.log("Response body received from exhort server : " + EOL + EOL)
+			console.log("Response body received from Trustify DA backend server : " + EOL + EOL)
 			console.log(JSON.stringify(result, null, 4))
-			console.log("Ending time of sending component analysis request to exhort server= " + new Date())
+			console.log("Ending time of sending component analysis request to Trustify DA backend server= " + new Date())
 
 
 		}
 	} else {
-		throw new Error(`Got error response from exhort backend - http return code : ${resp.status}, ex-request-id: ${resp.headers.get("ex-request-id")}  error message =>  ${await resp.text()}`)
+		throw new Error(`Got error response from Trustify DA backend - http return code : ${resp.status}, ex-request-id: ${resp.headers.get("ex-request-id")}  error message =>  ${await resp.text()}`)
 	}
 
 	return Promise.resolve(result)
@@ -191,13 +191,13 @@ async function requestImages(imageRefs, url, html = false, opts = {}) {
 			if (exRequestId) {
 				console.log("Unique Identifier associated with this request - ex-request-id=" + exRequestId)
 			}
-			console.log("Response body received from exhort server : " + EOL + EOL)
+			console.log("Response body received from Trustify DA backend server : " + EOL + EOL)
 			console.log(JSON.stringify(result, null, 4))
-			console.log("Ending time of sending component analysis request to exhort server= " + new Date())
+			console.log("Ending time of sending component analysis request to Trustify DA backend server= " + new Date())
 		}
 		return result
 	} else {
-		throw new Error(`Got error response from exhort backend - http return code : ${resp.status}, ex-request-id: ${resp.headers.get("ex-request-id")}  error message =>  ${await resp.text()}`)
+		throw new Error(`Got error response from Trustify DA backend - http return code : ${resp.status}, ex-request-id: ${resp.headers.get("ex-request-id")}  error message =>  ${await resp.text()}`)
 	}
 }
 
@@ -264,7 +264,7 @@ function getTokenHeaders(opts = {}) {
 	setRhdaHeader(rhdaTelemetryId, headers, opts);
 
 	if (process.env["TRUSTIFY_DA_DEBUG"] === "true") {
-		console.log("Headers Values to be sent to exhort:" + EOL)
+		console.log("Headers Values to be sent to Trustify DA backend:" + EOL)
 		for (const headerKey in headers) {
 			if (!headerKey.match(RegexNotToBeLogged)) {
 				console.log(`${headerKey}: ${headers[headerKey]}`)

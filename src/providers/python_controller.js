@@ -49,7 +49,7 @@ export default class Python_controller {
 	}
 	prepareEnvironment() {
 		if(!this.realEnvironment) {
-			this.pythonEnvDir = path.join(path.sep, "tmp", "exhort_env_js")
+			this.pythonEnvDir = path.join(path.sep, "tmp", "trustify_da_env_js")
 			try {
 				invokeCommand(this.pathToPythonBin, ['-m', 'venv', this.pythonEnvDir])
 			} catch (error) {

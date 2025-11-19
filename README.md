@@ -1,11 +1,13 @@
-# Exhort JavaScript API<br/>![latest-no-snapshot][0] ![latest-snapshot][1]
+# Trustify Dependency Analytics JavaScript Client<br/>![latest-no-snapshot][0] ![latest-snapshot][1]
 
-* Looking for the OpenAPI Spec? Try [Exhort API Spec](https://github.com/trustify-da/trustify-da-api-model)
-* Looking for our Java API? Try [Exhort Java API](https://github.com/guacsec/exhort-java-api).
-* Looking for our Backend implementation? Try [Exhort](https://github.com/guacsec/exhort).
+* Looking for the OpenAPI Spec? Try [Trustify Dependency Analytics API](https://github.com/guacsec/trustify-da-api-spec)
+* Looking for our Java API? Try [Trustify Dependency Analytics Java Client](https://github.com/guacsec/trustify-da-java-client).
+* Looking for our Backend implementation? Try [Trustify Dependency Analytics](https://github.com/guacsec/trustify-dependency-analytics).
 
 <h3>Usage</h3>
 <p>
+
+<strong>Prerequisites:</strong> The <code>TRUSTIFY_DA_BACKEND_URL</code> environment variable must be set to the URL of the Trustify Dependency Analytics backend service. You can set it as an environment variable or pass it in the options object (see <a href="#customization">Customization</a> section).
 
 <ul>
 <li>
@@ -15,24 +17,29 @@ Use as ESM Module from an ESM module
 npm install @trustify-da/trustify-da-javascript-client
 ```
 
+```shell
+# Set the mandatory backend URL
+export TRUSTIFY_DA_BACKEND_URL=https://trustify-da.example.com
+```
+
 ```javascript
-import exhort from '@trustify-da/trustify-da-javascript-client'
+import client from '@trustify-da/trustify-da-javascript-client'
 import fs from 'node:fs'
 
 // Get stack analysis in JSON format
-let stackAnalysis = await exhort.stackAnalysis('/path/to/pom.xml')
+let stackAnalysis = await client.stackAnalysis('/path/to/pom.xml')
 // Get stack analysis in HTML format (string)
-let stackAnalysisHtml = await exhort.stackAnalysis('/path/to/pom.xml', true)
+let stackAnalysisHtml = await client.stackAnalysis('/path/to/pom.xml', true)
 // Get component analysis in JSON format
-let componentAnalysis = await exhort.componentAnalysis('/path/to/pom.xml')
+let componentAnalysis = await client.componentAnalysis('/path/to/pom.xml')
 // Get image analysis in JSON format
-let imageAnalysis = await exhort.imageAnalysis(['docker.io/library/node:18'])
+let imageAnalysis = await client.imageAnalysis(['docker.io/library/node:18'])
 // Get image analysis in HTML format (string)
-let imageAnalysisHtml = await exhort.imageAnalysis(['docker.io/library/node:18'], true)
+let imageAnalysisHtml = await client.imageAnalysis(['docker.io/library/node:18'], true)
 // Analyze multiple images
-let multipleImagesAnalysis = await exhort.imageAnalysis(['docker.io/library/node:18', 'docker.io/library/python:3.9'])
+let multipleImagesAnalysis = await client.imageAnalysis(['docker.io/library/node:18', 'docker.io/library/python:3.9'])
 // Specify architecture using ^^ notation (e.g., httpd:2.4.49^^amd64)
-let imageAnalysisWithArch = await exhort.imageAnalysis(['httpd:2.4.49^^amd64'])
+let imageAnalysisWithArch = await client.imageAnalysis(['httpd:2.4.49^^amd64'])
 ```
 </li>
 </ul>
@@ -45,16 +52,16 @@ npm install @trustify-da/trustify-da-javascript-client
 ```
 
 ```javascript
-async function loadExhort()
+async function loadTrustifyDa()
 {
 // dynamic import is the only way to import ESM module into commonJS module
-  const { default: exhort } = await import('@trustify-da/trustify-da-javascript-client');
-  return exhort
+  const { default: client } = await import('@trustify-da/trustify-da-javascript-client');
+  return client
 }
-const runExhort = (manifestPath) => {
+const runTrustifyDa = (manifestPath) => {
   return new Promise(async ( resolve, reject) => {
     try {
-      let stackAnalysisReport = await (await loadExhort()).stackAnalysis(manifestPath,false)
+      let stackAnalysisReport = await (await loadTrustifyDa()).stackAnalysis(manifestPath,false)
       resolve(stackAnalysisReport)
 
     } catch (error)
@@ -64,7 +71,7 @@ const runExhort = (manifestPath) => {
   });
 };
 
-runExhort("./path/to/manifest").then(resp => console.log(JSON.stringify(resp,null,4)))
+runTrustifyDa("./path/to/manifest").then(resp => console.log(JSON.stringify(resp,null,4)))
 ```
 </li>
 
@@ -297,17 +304,21 @@ All of the 5 above examples are valid for marking a package to be ignored
 
 <h3>Customization</h3>
 <p>
-There are 2 approaches for customizing <em>Exhort JavaScript API</em>. Whether you're using this API as a
+There are 2 approaches for customizing <em>Trustify Dependency Analytics JavaScript Client</em>. Whether you're using this API as a
 <em>Global Module</em>, a <em>Remote Script</em>, or an <em>ESM Module</em>, you can use <em>Environment Variables</em>
 for various customization.
+
+<strong>Note:</strong> The <code>TRUSTIFY_DA_BACKEND_URL</code> environment variable is <strong>mandatory</strong> and must be set to the URL of the Trustify Dependency Analytics backend service. Without this variable, the API will throw an error.
 
 However, <em>ESM Module</em> users, can opt for customizing programmatically:
 
 ```javascript
-import exhort from '@trustify-da/trustify-da-javascript-client'
+import client from '@trustify-da/trustify-da-javascript-client'
 import fs from 'node:fs'
 
 let options = {
+  // Mandatory: Backend URL for Trustify Dependency Analytics service
+  'TRUSTIFY_DA_BACKEND_URL': 'https://api.trustify.dev',
   'TRUSTIFY_DA_MVN_PATH': '/path/to/my/mvn',
   'TRUSTIFY_DA_NPM_PATH': '/path/to/npm',
   'TRUSTIFY_DA_PNPM_PATH': '/path/to/pnpm',
@@ -323,19 +334,19 @@ let options = {
 }
 
 // Get stack analysis in JSON format ( all package managers, pom.xml is as an example here)
-let stackAnalysis = await exhort.stackAnalysis('/path/to/pom.xml', false, options)
+let stackAnalysis = await client.stackAnalysis('/path/to/pom.xml', false, options)
 // Get stack analysis in HTML format in string ( all package managers, pom.xml is as an example here)
-let stackAnalysisHtml = await exhort.stackAnalysis('/path/to/pom.xml', true, options)
+let stackAnalysisHtml = await client.stackAnalysis('/path/to/pom.xml', true, options)
 
 // Get component analysis in JSON format
-let componentAnalysis = await exhort.componentAnalysis('/path/to/pom.xml', options)
+let componentAnalysis = await client.componentAnalysis('/path/to/pom.xml', options)
 
 // Get image analysis in JSON format
-let imageAnalysis = await exhort.imageAnalysis(['docker.io/library/node:18'], false, options)
+let imageAnalysis = await client.imageAnalysis(['docker.io/library/node:18'], false, options)
 // Get image analysis in HTML format in string
-let imageAnalysisHtml = await exhort.imageAnalysis(['docker.io/library/node:18'], true, options)
+let imageAnalysisHtml = await client.imageAnalysis(['docker.io/library/node:18'], true, options)
 // Specify architecture using ^^ notation (e.g., httpd:2.4.49^^amd64)
-let imageAnalysisWithArch = await exhort.imageAnalysis(['httpd:2.4.49^^amd64'], false, options)
+let imageAnalysisWithArch = await client.imageAnalysis(['httpd:2.4.49^^amd64'], false, options)
 ```
  **_Environment variables takes precedence._**
 </p>

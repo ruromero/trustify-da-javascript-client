@@ -58,7 +58,7 @@ suite('Integration Tests', () => {
 			let providers = ["rhtpa"]
 			providers.forEach(provider => expect(extractTotalsGeneralOrFromProvider(providedDataForStack, provider)).greaterThan(0))
 			// TODO: if sources doesn't exist, add "scanned" instead
-			// python transitive count for stack analysis is awaiting fix in exhort backend
+			// python transitive count for stack analysis is awaiting fix in the DA backend
 			if(packageManager !== "pip") {
 				expect(providedDataForStack.scanned.transitive).greaterThan(0)
 			}

@@ -119,7 +119,5 @@ contribution. See the [DCO](DCO) file for details.
 
 <!-- Real links -->
 [0]: https://www.conventionalcommits.org/en/v1.0.0/
-[1]: https://github.com/guacsec/exhort/blob/0.1.x/src/main/resources/META-INF/openapi.yaml
-
 <!-- Badge links -->
 [10]: https://badgen.net/badge/NodeJS%20Version/18/68a063

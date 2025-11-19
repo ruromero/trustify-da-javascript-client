@@ -12,7 +12,9 @@
 		"exhort",
 		"secure",
 		"supply-chain",
-		"vulnerability"
+		"vulnerability",
+		"trustify",
+		"dependency analytics"
 	],
 	"engines": {
 		"node": ">= 20.0.0",
