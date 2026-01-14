@@ -22,5 +22,5 @@ jobs:
     uses: trustification/exhort-integration-tests/.github/workflows/integration.yml@main
     with:
       language: javascript
-      repo-url: ${{ github.repository }}
-      commit-sha: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha && github.event.workflow_run.head_sha != github.event.workflow_run.base_sha && github.event.workflow_run.head_sha ||github.sha }}
+      repo-url: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_repository.full_name || github.repository }}
+      commit-sha: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha || github.sha }}
