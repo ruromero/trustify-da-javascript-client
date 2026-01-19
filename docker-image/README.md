@@ -26,7 +26,7 @@ NPM | 11.6.2 |
 PNPM | 10.1.0 |
 Yarn Classic | 4.9.1 |
 Yarn Berry | 1.22.22 |
-Python | 3.9.25 |
+Python | task param (e.g. python:3.11) |
 
 ## Usage Notes
 

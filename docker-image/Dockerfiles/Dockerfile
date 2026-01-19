@@ -75,7 +75,7 @@ ARG IMAGE_CREATED
 
 # Open Container Initiative (OCI) metadata labels
 LABEL org.opencontainers.image.source=https://github.com/guacsec/trustify-da-javascript-client
-LABEL org.opencontainers.image.description="Trustify Dependency Analytics JavaScript Client - Container image for dependency analysis and vulnerability scanning supporting Maven, NPM, Golang, Gradle, Pnpm, Yarn, and Python ecosystems"
+LABEL org.opencontainers.image.description="Trustify Dependency Analytics JavaScript Client - Container image for dependency analysis and vulnerability scanning supporting Maven, NPM, Golang, Gradle, Pnpm and Yarn ecosystems"
 LABEL org.opencontainers.image.licenses=Apache-2.0
 LABEL org.opencontainers.image.title="Trustify Dependency Analytics JavaScript Client"
 LABEL org.opencontainers.image.vendor="guacsec"
@@ -89,8 +89,6 @@ LABEL org.opencontainers.image.created="${IMAGE_CREATED}"
 ENV TRUSTIFY_DA_PIP_FREEZE=''
 # contains pip show data for all packages, base64 encoded
 ENV TRUSTIFY_DA_PIP_SHOW=''
-# indicate whether to use the virtual environment for python packages
-ENV TRUSTIFY_DA_PYTHON_VIRTUAL_ENV='true'
 
 # Copy OpenJDK (Temurin) from the builder stage
 COPY --from=builder /usr/temurin-21/ /usr/temurin-21/
@@ -112,11 +110,9 @@ ENV GRADLE_HOME=/usr/gradle-9.2.1
 COPY --from=builder /usr/local/corepack/ /usr/local/corepack/
 ENV COREPACK_HOME=/usr/local/corepack/cache
 
-# Install Python via microdnf, create yarn wrapper scripts, and fix permissions
+# Create yarn wrapper scripts, and fix permissions
 USER root
-RUN microdnf install -y python3 python3-pip \
-    && microdnf clean all \
-    && chown -R 1001:0 /usr/local/corepack/cache \
+RUN chown -R 1001:0 /usr/local/corepack/cache \
     && chmod -R g+rwX /usr/local/corepack/cache \
     && printf '#!/bin/sh\nexec corepack yarn@1.22.22 "$@"\n' > /usr/local/bin/yarn-classic \
     && printf '#!/bin/sh\nexec corepack yarn@4.9.1 "$@"\n' > /usr/local/bin/yarn-berry \
