@@ -24,9 +24,14 @@ Gradle | 9.2.1 |
 Go | 1.25.5 |
 NPM | 11.6.2 |
 PNPM | 10.1.0 |
-Yarn Classic | 4.9.1 |
-Yarn Berry | 1.22.22 |
-Python | task param (e.g. python:3.11) |
+Yarn Classic | 1.22.22 |
+Yarn Berry | 4.9.1 |
+Python | n/a |
+
+### Note for Python users
+
+This container image doesn't come with Python or Pip installed. It is suggested that you run `pip install` and `pip freeze` in a previous step like a sidecar (see [Tekton sidecars](https://tekton.dev/docs/pipelines/tasks/#using-a-sidecar-in-a-task)) where you can specify exactly which Python version
+your project requires and generate the required dependency data.
 
 ## Usage Notes
 
