@@ -66,6 +66,30 @@ export default class Java_maven extends Base_java {
 	}
 
 	/**
+	 * Read license from pom.xml manifest
+	 * @param {string} manifestPath - path to pom.xml
+	 * @returns {string|null}
+	 */
+	readLicenseFromManifest(manifestPath) {
+		try {
+			const xml = fs.readFileSync(manifestPath, 'utf-8');
+			const parser = new XMLParser({ ignoreAttributes: false });
+			const obj = parser.parse(xml);
+			const project = obj?.project;
+			if (!project?.licenses?.license) {
+				return null;
+			}
+			const license = Array.isArray(project.licenses.license)
+				? project.licenses.license[0]
+				: project.licenses.license;
+			const name = (license?.name && license.name.trim()) || null;
+			return name || null;
+		} catch {
+			return null;
+		}
+	}
+
+	/**
 	 * Create a Dot Graph dependency tree for a manifest path.
 	 * @param {string} manifest - path for pom.xml
 	 * @param {{}} [opts={}] - optional various options to pass along the application
@@ -119,7 +143,7 @@ export default class Java_maven extends Base_java {
 		if (process.env["TRUSTIFY_DA_DEBUG"] === "true") {
 			console.error("Dependency tree that will be used as input for creating the BOM =>" + EOL + EOL + content.toString())
 		}
-		let sbom = this.createSbomFileFromTextFormat(content.toString(), ignoredDeps, opts);
+		let sbom = this.createSbomFileFromTextFormat(content.toString(), ignoredDeps, opts, manifest);
 		// delete temp file and directory
 		fs.rmSync(tmpDir, { recursive: true, force: true })
 		// return dependency graph as string
@@ -130,15 +154,17 @@ export default class Java_maven extends Base_java {
 	 *
 	 * @param {String} textGraphList Text graph String of the manifest
 	 * @param {[String]} ignoredDeps List of ignored dependencies to be omitted from sbom
+	 * @param {String} manifestPath Path to the pom.xml manifest
 	 * @return {String} formatted sbom Json String with all dependencies
 	 */
-	createSbomFileFromTextFormat(textGraphList, ignoredDeps, opts) {
+	createSbomFileFromTextFormat(textGraphList, ignoredDeps, opts, manifestPath) {
 		let lines = textGraphList.split(EOL);
 		// get root component
 		let root = lines[0];
 		let rootPurl = this.parseDep(root);
+		const license = this.readLicenseFromManifest(manifestPath);
 		let sbom = new Sbom();
-		sbom.addRoot(rootPurl);
+		sbom.addRoot(rootPurl, license);
 		this.parseDependencyTree(root, 0, lines.slice(1), sbom);
 		return sbom.filterIgnoredDeps(ignoredDeps).getAsJsonString(opts);
 	}
@@ -173,7 +199,8 @@ export default class Java_maven extends Base_java {
 		let sbom = new Sbom();
 		let rootDependency = this.#getRootFromPom(tmpEffectivePom, manifestPath);
 		let purlRoot = this.toPurl(rootDependency.groupId, rootDependency.artifactId, rootDependency.version)
-		sbom.addRoot(purlRoot)
+		const license = this.readLicenseFromManifest(manifestPath);
+		sbom.addRoot(purlRoot, license)
 		dependencies.forEach(dep => {
 			let currentPurl = this.toPurl(dep.groupId, dep.artifactId, dep.version)
 			sbom.addDependency(purlRoot, currentPurl)
