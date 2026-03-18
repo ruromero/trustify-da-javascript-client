@@ -124,6 +124,12 @@ suite('testing the matchForLicense utility function', () => {
 			expect(provider.isSupported('requirements.txt')).to.be.true;
 		});
 
+		test('should match Rust Cargo provider for Cargo.toml', () => {
+			const provider = matchForLicense('/some/path/Cargo.toml', availableProviders);
+			expect(provider).to.exist;
+			expect(provider.isSupported('Cargo.toml')).to.be.true;
+		});
+
 		test('all matched providers should have readLicenseFromManifest method', () => {
 			const manifests = [
 				'pom.xml',
@@ -131,7 +137,8 @@ suite('testing the matchForLicense utility function', () => {
 				'build.gradle.kts',
 				'package.json',
 				'go.mod',
-				'requirements.txt'
+				'requirements.txt',
+				'Cargo.toml'
 			];
 
 			manifests.forEach(manifest => {

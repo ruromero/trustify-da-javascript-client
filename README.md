@@ -49,7 +49,7 @@ let imageAnalysisWithArch = await client.imageAnalysis(['httpd:2.4.49^^amd64'])
 The client automatically detects your project's license with intelligent fallback:
 </p>
 <ul>
-<li><strong>Manifest-first:</strong> For ecosystems with license support (Maven, JavaScript), reads from manifest file (<code>pom.xml</code>, <code>package.json</code>)</li>
+<li><strong>Manifest-first:</strong> For ecosystems with license support (Maven, JavaScript, Rust Cargo), reads from manifest file (<code>pom.xml</code>, <code>package.json</code>, <code>Cargo.toml</code>)</li>
 <li><strong>LICENSE file fallback:</strong> If no license in manifest, or for ecosystems without license support (Gradle, Go, Python), automatically reads from <code>LICENSE</code>, <code>LICENSE.md</code>, or <code>LICENSE.txt</code></li>
 <li><strong>SBOM integration:</strong> Detected licenses are included in generated SBOMs for all ecosystems</li>
 <li><strong>SPDX support:</strong> Automatically detects common licenses (Apache-2.0, MIT, GPL, BSD) from LICENSE file content</li>
@@ -196,6 +196,7 @@ $ trustify-da-javascript-client license /path/to/package.json
 <li><a href="https://go.dev/">Golang</a> - <a href="https://go.dev/blog/using-go-modules/">Go Modules</a></li>
 <li><a href="https://www.python.org/">Python</a> - <a href="https://pypi.org/project/pip/">pip Installer</a></li>
 <li><a href="https://gradle.org/">Gradle (Groovy and Kotlin DSL)</a> - <a href="https://gradle.org/install/">Gradle Installation</a></li>
+<li><a href="https://www.rust-lang.org/">Rust</a> - <a href="https://doc.rust-lang.org/cargo/">Cargo</a></li>
 </ul>
 
 <h3>License Detection</h3>
@@ -203,7 +204,7 @@ $ trustify-da-javascript-client license /path/to/package.json
 The client automatically detects your project's license with intelligent fallback:
 </p>
 <ul>
-<li><strong>Manifest-first:</strong> For ecosystems with license support (Maven, JavaScript), reads from manifest file (<code>pom.xml</code>, <code>package.json</code>)</li>
+<li><strong>Manifest-first:</strong> For ecosystems with license support (Maven, JavaScript, Rust Cargo), reads from manifest file (<code>pom.xml</code>, <code>package.json</code>, <code>Cargo.toml</code>)</li>
 <li><strong>LICENSE file fallback:</strong> If no license in manifest, or for ecosystems without license support (Gradle, Go, Python), automatically reads from <code>LICENSE</code>, <code>LICENSE.md</code>, or <code>LICENSE.txt</code></li>
 <li><strong>SBOM integration:</strong> Detected licenses are included in generated SBOMs for all ecosystems</li>
 <li><strong>SPDX support:</strong> Automatically detects common licenses (Apache-2.0, MIT, GPL, BSD) from LICENSE file content</li>
@@ -334,7 +335,21 @@ test {
 }
 ```
 
-All of the 5 above examples are valid for marking a package to be ignored
+<em>Rust Cargo</em> users can add a comment with <code># trustify-da-ignore</code> (or <code># exhortignore</code>) in <em>Cargo.toml</em> next to the dependency to be ignored. This works for inline declarations, table-based declarations, and workspace-level dependency sections:
+
+```toml
+[dependencies]
+serde = "1.0" # trustify-da-ignore
+tokio = { version = "1.35", features = ["full"] }
+
+[dependencies.regex] # trustify-da-ignore
+version = "1.10"
+
+[workspace.dependencies]
+log = "0.4" # trustify-da-ignore
+```
+
+All of the 6 above examples are valid for marking a package to be ignored
 </li>
 
 </ul>
@@ -366,6 +381,7 @@ let options = {
   'TRUSTIFY_DA_PYTHON_PATH' : '/path/to/python',
   'TRUSTIFY_DA_PIP_PATH' : '/path/to/pip',
   'TRUSTIFY_DA_GRADLE_PATH' : '/path/to/gradle',
+  'TRUSTIFY_DA_CARGO_PATH' : '/path/to/cargo',
   // Configure proxy for all requests
   'TRUSTIFY_DA_PROXY_URL': 'http://proxy.example.com:8080'
 }
@@ -411,7 +427,7 @@ The proxy URL should be in the format: `http://host:port` or `https://host:port`
 
 <h4>License resolution and dependency license compliance</h4>
 <p>
-The client can resolve the <strong>project license</strong> from the manifest (e.g. <code>package.json</code> <code>license</code>, <code>pom.xml</code> <code>&lt;licenses&gt;</code>) and from a <code>LICENSE</code> or <code>LICENSE.md</code> file in the project, and report when they differ. For <strong>component analysis</strong>, you can optionally run a license check: the client fetches dependency licenses from the backend (by purl) and reports dependencies whose licenses are incompatible with the project license. See <a href="docs/license-resolution-and-compliance.md">License resolution and compliance</a> for design and behavior. To disable the check on component analysis, set <code>TRUSTIFY_DA_LICENSE_CHECK=false</code> or pass <code>licenseCheck: false</code> in the options.
+The client can resolve the <strong>project license</strong> from the manifest (e.g. <code>package.json</code> <code>license</code>, <code>pom.xml</code> <code>&lt;licenses&gt;</code>, <code>Cargo.toml</code> <code>license</code>) and from a <code>LICENSE</code> or <code>LICENSE.md</code> file in the project, and report when they differ. For <strong>component analysis</strong>, you can optionally run a license check: the client fetches dependency licenses from the backend (by purl) and reports dependencies whose licenses are incompatible with the project license. See <a href="docs/license-resolution-and-compliance.md">License resolution and compliance</a> for design and behavior. To disable the check on component analysis, set <code>TRUSTIFY_DA_LICENSE_CHECK=false</code> or pass <code>licenseCheck: false</code> in the options.
 </p>
 
 <h4>Customizing Executables</h4>
@@ -486,6 +502,11 @@ following keys for setting custom paths for the said executables.
 <td><a href="https://gradle.org/">Gradle</a></td>
 <td><em>gradle</em></td>
 <td>TRUSTIFY_DA_PREFER_GRADLEW</td>
+</tr>
+<tr>
+<td><a href="https://www.rust-lang.org/">Rust Cargo</a></td>
+<td><em>cargo</em></td>
+<td>TRUSTIFY_DA_CARGO_PATH</td>
 </tr>
 </table>
 

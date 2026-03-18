@@ -10,6 +10,7 @@ import Javascript_npm from '../../src/providers/javascript_npm.js'
 import Javascript_pnpm from '../../src/providers/javascript_pnpm.js'
 import Javascript_yarn from '../../src/providers/javascript_yarn.js'
 import pythonPipProvider from '../../src/providers/python_pip.js'
+import rustCargoProvider from '../../src/providers/rust_cargo.js'
 import { normalizeLicensesResponse } from '../../src/license/licenses_api.js'
 
 suite('normalizeLicensesResponse', () => {
@@ -160,6 +161,31 @@ suite('testing readLicenseFromManifest with existing test manifests', () => {
 		});
 	});
 
+	suite('Rust Cargo provider', () => {
+		test('should read ISC license from [package] section', () => {
+			const cargoPath = path.resolve('test/providers/tst_manifests/cargo/cargo_single_crate_with_license/Cargo.toml');
+			const license = rustCargoProvider.readLicenseFromManifest(cargoPath);
+			expect(license).to.equal('ISC');
+		});
+
+		test('should read ISC license from [workspace.package] section', () => {
+			const cargoPath = path.resolve('test/providers/tst_manifests/cargo/cargo_virtual_workspace_with_license/Cargo.toml');
+			const license = rustCargoProvider.readLicenseFromManifest(cargoPath);
+			expect(license).to.equal('ISC');
+		});
+
+		test('should return null when license not present', () => {
+			const cargoPath = path.resolve('test/providers/tst_manifests/cargo/cargo_single_crate_no_ignore/Cargo.toml');
+			const license = rustCargoProvider.readLicenseFromManifest(cargoPath);
+			expect(license).to.be.null;
+		});
+
+		test('should return null for non-existent file', () => {
+			const license = rustCargoProvider.readLicenseFromManifest('/fake/path/Cargo.toml');
+			expect(license).to.be.null;
+		});
+	});
+
 	suite('All providers have readLicenseFromManifest method', () => {
 		const allProviders = [
 			{ name: 'Java Maven', instance: new Java_maven() },
@@ -169,7 +195,8 @@ suite('testing readLicenseFromManifest with existing test manifests', () => {
 			{ name: 'JavaScript pnpm', instance: new Javascript_pnpm() },
 			{ name: 'JavaScript yarn', instance: new Javascript_yarn() },
 			{ name: 'Golang', instance: golangGomodulesProvider },
-			{ name: 'Python', instance: pythonPipProvider }
+			{ name: 'Python', instance: pythonPipProvider },
+			{ name: 'Rust Cargo', instance: rustCargoProvider }
 		];
 
 		allProviders.forEach(({ name, instance }) => {
