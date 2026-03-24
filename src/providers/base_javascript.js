@@ -4,7 +4,7 @@ import path from 'node:path'
 
 import { getLicense } from '../license/license_utils.js'
 import Sbom from '../sbom.js'
-import { getCustom, getCustomPath, invokeCommand, toPurl, toPurlFromString } from "../tools.js";
+import { getCustom, getCustomPath, invokeCommand, toPurl, toPurlFromString } from '../tools.js'
 
 import Manifest from './manifest.js';
 
@@ -112,13 +112,18 @@ export default class Base_javascript {
 	}
 
 	/**
-   * Checks if a required lock file exists in the same path as the manifest
+   * Checks if a required lock file exists in the manifest directory or at the workspace root.
+   * When TRUSTIFY_DA_WORKSPACE_DIR is provided (via env var or opts),
+   * checks only that directory for the lock file.
    * @param {string} manifestDir - The base directory where the manifest is located
+   * @param {{TRUSTIFY_DA_WORKSPACE_DIR?: string}} [opts={}] - optional workspace root
    * @returns {boolean} True if the lock file exists
    */
-	validateLockFile(manifestDir) {
-		const lock = path.join(manifestDir, this._lockFileName());
-		return fs.existsSync(lock);
+	validateLockFile(manifestDir, opts = {}) {
+		const workspaceDir = getCustom('TRUSTIFY_DA_WORKSPACE_DIR', null, opts)
+		const dirToCheck = workspaceDir ? path.resolve(workspaceDir) : manifestDir
+		const lock = path.join(dirToCheck, this._lockFileName())
+		return fs.existsSync(lock)
 	}
 
 	/**
@@ -176,15 +181,18 @@ export default class Base_javascript {
 	/**
    * Builds the dependency tree for the project
    * @param {boolean} includeTransitive - Whether to include transitive dependencies
+   * @param {Object} [opts={}] - Configuration options; when `TRUSTIFY_DA_WORKSPACE_DIR` is set, commands run from workspace root
    * @returns {Object} The dependency tree
    * @protected
    */
-	_buildDependencyTree(includeTransitive) {
+	_buildDependencyTree(includeTransitive, opts = {}) {
 		this._version();
-		let manifestDir = path.dirname(this.#manifest.manifestPath);
-		this.#createLockFile(manifestDir);
+		const manifestDir = path.dirname(this.#manifest.manifestPath);
+		const workspaceDir = getCustom('TRUSTIFY_DA_WORKSPACE_DIR', null, opts)
+		const cmdDir = workspaceDir ? path.resolve(workspaceDir) : manifestDir;
+		this.#createLockFile(cmdDir);
 
-		let output = this.#executeListCmd(includeTransitive, manifestDir);
+		let output = this.#executeListCmd(includeTransitive, cmdDir);
 		output = this._parseDepTreeOutput(output);
 		return JSON.parse(output);
 	}
@@ -196,7 +204,7 @@ export default class Base_javascript {
    * @private
    */
 	#getSBOM(opts = {}) {
-		const depsObject = this._buildDependencyTree(true);
+		const depsObject = this._buildDependencyTree(true, opts);
 
 		let mainComponent = toPurl(purlType, this.#manifest.name, this.#manifest.version);
 		const license = this.readLicenseFromManifest(this.#manifest.manifestPath);
@@ -255,7 +263,7 @@ export default class Base_javascript {
    * @private
    */
 	#getDirectDependencySbom(opts = {}) {
-		const depTree = this._buildDependencyTree(false);
+		const depTree = this._buildDependencyTree(false, opts);
 		let mainComponent = toPurl(purlType, this.#manifest.name, this.#manifest.version);
 		const license = this.readLicenseFromManifest(this.#manifest.manifestPath);
 
