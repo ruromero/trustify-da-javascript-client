@@ -112,18 +112,70 @@ export default class Base_javascript {
 	}
 
 	/**
-   * Checks if a required lock file exists in the manifest directory or at the workspace root.
-   * When TRUSTIFY_DA_WORKSPACE_DIR is provided (via env var or opts),
-   * checks only that directory for the lock file.
+   * Walks up the directory tree from manifestDir looking for the lock file.
+   * Stops when the lock file is found, when a package.json with a "workspaces"
+   * field is encountered without a lock file (workspace root boundary), or
+   * when the filesystem root is reached.
+   *
+   * When TRUSTIFY_DA_WORKSPACE_DIR is set, checks only that directory (no walk-up).
+   *
+   * @param {string} manifestDir - The directory to start searching from
+   * @param {Object} [opts={}] - optional; may contain TRUSTIFY_DA_WORKSPACE_DIR
+   * @returns {string|null} The directory containing the lock file, or null
+   * @protected
+   */
+	_isWorkspaceRoot(dir) {
+		if (fs.existsSync(path.join(dir, 'pnpm-workspace.yaml'))) {
+			return true
+		}
+		const pkgJsonPath = path.join(dir, 'package.json')
+		if (fs.existsSync(pkgJsonPath)) {
+			try {
+				const content = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'))
+				if (content.workspaces) {
+					return true
+				}
+			} catch (_) {
+				// ignore parse errors
+			}
+		}
+		return false
+	}
+
+	_findLockFileDir(manifestDir, opts = {}) {
+		const workspaceDir = getCustom('TRUSTIFY_DA_WORKSPACE_DIR', null, opts)
+		if (workspaceDir) {
+			const dir = path.resolve(workspaceDir)
+			return fs.existsSync(path.join(dir, this._lockFileName())) ? dir : null
+		}
+
+		let dir = path.resolve(manifestDir)
+		let parent = dir
+
+		do {
+			dir = parent
+
+			if (fs.existsSync(path.join(dir, this._lockFileName()))) {
+				return dir
+			}
+
+			if (this._isWorkspaceRoot(dir)) {
+				return null
+			}
+
+			parent = path.dirname(dir)
+		} while (parent !== dir)
+
+		return null
+	}
+
+	/**
    * @param {string} manifestDir - The base directory where the manifest is located
-   * @param {{TRUSTIFY_DA_WORKSPACE_DIR?: string}} [opts={}] - optional workspace root
+   * @param {Object} [opts={}] - optional; may contain TRUSTIFY_DA_WORKSPACE_DIR
    * @returns {boolean} True if the lock file exists
    */
 	validateLockFile(manifestDir, opts = {}) {
-		const workspaceDir = getCustom('TRUSTIFY_DA_WORKSPACE_DIR', null, opts)
-		const dirToCheck = workspaceDir ? path.resolve(workspaceDir) : manifestDir
-		const lock = path.join(dirToCheck, this._lockFileName())
-		return fs.existsSync(lock)
+		return this._findLockFileDir(manifestDir, opts) !== null
 	}
 
 	/**
@@ -188,8 +240,7 @@ export default class Base_javascript {
 	_buildDependencyTree(includeTransitive, opts = {}) {
 		this._version();
 		const manifestDir = path.dirname(this.#manifest.manifestPath);
-		const workspaceDir = getCustom('TRUSTIFY_DA_WORKSPACE_DIR', null, opts)
-		const cmdDir = workspaceDir ? path.resolve(workspaceDir) : manifestDir;
+		const cmdDir = this._findLockFileDir(manifestDir, opts) || manifestDir;
 		this.#createLockFile(cmdDir);
 
 		let output = this.#executeListCmd(includeTransitive, cmdDir);
@@ -310,7 +361,7 @@ export default class Base_javascript {
    */
 	#executeListCmd(includeTransitive, manifestDir) {
 		const listArgs = this._listCmdArgs(includeTransitive, manifestDir);
-		return this.#invokeCommand(listArgs);
+		return this.#invokeCommand(listArgs, { cwd: manifestDir });
 	}
 
 	/**
@@ -332,14 +383,12 @@ export default class Base_javascript {
 		const isWindows = os.platform() === 'win32';
 
 		if (isWindows) {
-			// On Windows, --prefix flag doesn't work as expected
-			// Instead of installing from the prefix folder, it installs from current working directory
 			process.chdir(manifestDir);
 		}
 
 		try {
 			const args = this._updateLockFileCmdArgs(manifestDir);
-			this.#invokeCommand(args);
+			this.#invokeCommand(args, { cwd: manifestDir });
 		} finally {
 			if (isWindows) {
 				process.chdir(originalDir);
