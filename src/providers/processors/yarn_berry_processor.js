@@ -58,15 +58,15 @@ export default class Yarn_berry_processor extends Yarn_processor {
 		}
 
 		return new Map(
-			depTree.filter(dep => !this.#isRoot(dep.value)).map(
-				dep => {
+			depTree.filter(dep => !this.#isRoot(dep.value))
+				.map(dep => {
 					const depName = dep.value;
 					const idx = depName.lastIndexOf('@');
 					const name = depName.substring(0, idx);
 					const version = dep.children.Version;
 					return [name, toPurl(purlType, name, version)];
-				}
-			)
+				})
+				.filter(([name]) => this._manifest.dependencies.includes(name))
 		);
 	}
 
@@ -93,14 +93,25 @@ export default class Yarn_berry_processor extends Yarn_processor {
 			return;
 		}
 
+		// Collect names of production dependencies to filter out devDeps from root
+		const prodDeps = new Set(this._manifest.dependencies);
+
 		depTree.forEach(n => {
 			const depName = n.value;
-			const from = this.#isRoot(depName) ? toPurlFromString(sbom.getRoot().purl) : this.#purlFromNode(depName, n);
+			const isRoot = this.#isRoot(depName);
+			const from = isRoot ? toPurlFromString(sbom.getRoot().purl) : this.#purlFromNode(depName, n);
 			const deps = n.children?.Dependencies;
 			if(!deps) {return;}
 			deps.forEach(d => {
 				const to = this.#purlFromLocator(d.locator);
 				if(to) {
+					// For root node, only add production dependencies (exclude devDeps)
+					if (isRoot) {
+						const fullName = to.namespace ? `${to.namespace}/${to.name}` : to.name;
+						if (!prodDeps.has(fullName)) {
+							return;
+						}
+					}
 					sbom.addDependency(from, to);
 				}
 			});

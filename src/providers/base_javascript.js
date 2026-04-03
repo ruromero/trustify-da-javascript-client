@@ -264,8 +264,30 @@ export default class Base_javascript {
 		sbom.addRoot(mainComponent, license);
 
 		this._addDependenciesToSbom(sbom, depsObject);
+		this.#ensurePeerAndOptionalDeps(sbom);
 		sbom.filterIgnoredDeps(this.#manifest.ignored);
 		return sbom.getAsJsonString(opts);
+	}
+
+	/**
+	 * Ensures peer and optional dependencies declared in the manifest are
+	 * present in the SBOM, even when the package manager does not resolve them
+	 * (e.g. yarn does not include peer deps in its dependency listing).
+	 * @param {Sbom} sbom - The SBOM to supplement
+	 * @private
+	 */
+	#ensurePeerAndOptionalDeps(sbom) {
+		const rootPurl = toPurl(purlType, this.#manifest.name, this.#manifest.version);
+		const rootComponent = sbom.getRoot();
+		const depSources = [this.#manifest.peerDependencies, this.#manifest.optionalDependencies];
+		for (const source of depSources) {
+			for (const [name, version] of Object.entries(source)) {
+				if (!sbom.checkIfPackageInsideDependsOnList(rootComponent, name)) {
+					const target = toPurl(purlType, name, version);
+					sbom.addDependency(rootPurl, target);
+				}
+			}
+		}
 	}
 
 	/**
@@ -275,7 +297,10 @@ export default class Base_javascript {
    * @protected
    */
 	_addDependenciesToSbom(sbom, depTree) {
-		const dependencies = depTree["dependencies"] || {};
+		const dependencies = {
+			...depTree["dependencies"],
+			...depTree["optionalDependencies"],
+		};
 
 		Object.entries(dependencies)
 			.forEach(entry => {
@@ -330,6 +355,7 @@ export default class Base_javascript {
 			const rootPurl = toPurlFromString(sbom.getRoot().purl);
 			sbom.addDependency(rootPurl, rootDeps.get(key));
 		}
+		this.#ensurePeerAndOptionalDeps(sbom);
 		sbom.filterIgnoredDeps(this.#manifest.ignored);
 		return sbom.getAsJsonString(opts);
 	}
@@ -341,12 +367,16 @@ export default class Base_javascript {
    * @protected
    */
 	_getRootDependencies(depTree) {
-		if (!depTree.dependencies) {
+		const allDeps = {
+			...depTree.dependencies,
+			...depTree.optionalDependencies,
+		};
+		if (Object.keys(allDeps).length === 0) {
 			return new Map();
 		}
 
 		return new Map(
-			Object.entries(depTree.dependencies).map(
+			Object.entries(allDeps).map(
 				([key, value]) => [key, toPurl(purlType, key, value.version)]
 			)
 		);
