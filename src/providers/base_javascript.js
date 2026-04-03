@@ -278,13 +278,15 @@ export default class Base_javascript {
 	 */
 	#ensurePeerAndOptionalDeps(sbom) {
 		const rootPurl = toPurl(purlType, this.#manifest.name, this.#manifest.version);
-		const rootComponent = sbom.getRoot();
 		const depSources = [this.#manifest.peerDependencies, this.#manifest.optionalDependencies];
 		for (const source of depSources) {
 			for (const [name, version] of Object.entries(source)) {
-				if (!sbom.checkIfPackageInsideDependsOnList(rootComponent, name)) {
-					const target = toPurl(purlType, name, version);
-					sbom.addDependency(rootPurl, target);
+				// Build the purl prefix for exact matching (e.g. "pkg:npm/minimist@"
+				// or "pkg:npm/%40hapi/joi@") to avoid substring false positives
+				const probe = toPurl(purlType, name, version);
+				const purlPrefix = probe.toString().replace(/@[^@]*$/, '@');
+				if (!sbom.checkDependsOnByPurlPrefix(rootPurl, purlPrefix)) {
+					sbom.addDependency(rootPurl, probe);
 				}
 			}
 		}
