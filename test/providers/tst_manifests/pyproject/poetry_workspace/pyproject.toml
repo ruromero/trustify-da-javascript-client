@@ -1,0 +1,8 @@
+[tool.poetry]
+name = "poetry-mono"
+version = "0.1.0"
+description = "Poetry monorepo root"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+requests = "^2.0"

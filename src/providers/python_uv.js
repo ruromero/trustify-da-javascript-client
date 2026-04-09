@@ -1,3 +1,8 @@
+import fs from 'node:fs'
+import path from 'node:path'
+
+import { parse as parseToml } from 'smol-toml'
+
 import { environmentVariableIsPopulated, getCustomPath, invokeCommand } from '../tools.js'
 
 import Base_pyproject from './base_pyproject.js'
@@ -24,7 +29,7 @@ export default class Python_uv extends Base_pyproject {
 	async _getDependencyData(manifestDir, parsed, opts) {
 		let projectName = this._getProjectName(parsed)
 		let uvOutput = this._getUvExportOutput(manifestDir, opts)
-		return this._parseUvExport(uvOutput, projectName)
+		return this._parseUvExport(uvOutput, projectName, manifestDir)
 	}
 
 	/**
@@ -47,9 +52,10 @@ export default class Python_uv extends Base_pyproject {
 	 *
 	 * @param {string} output
 	 * @param {string} projectName - canonical project name to identify direct deps
+	 * @param {string} manifestDir - directory where uv export was run (for resolving editable installs)
 	 * @returns {Promise<{directDeps: string[], graph: Map<string, {name: string, version: string, children: string[]}>}>}
 	 */
-	async _parseUvExport(output, projectName) {
+	async _parseUvExport(output, projectName, manifestDir) {
 		let [parser, pinnedVersionQuery] = await Promise.all([
 			getParser(), getPinnedVersionQuery()
 		])
@@ -62,6 +68,30 @@ export default class Python_uv extends Base_pyproject {
 		let collectingVia = false
 
 		for (let child of root.children) {
+			if (child.type === 'global_opt') {
+				let optNode = child.children.find(c => c.type === 'option')
+				let pathNode = child.children.find(c => c.type === 'path')
+				if (optNode?.text === '-e' && pathNode && manifestDir) {
+					let memberDir = path.resolve(manifestDir, pathNode.text)
+					let memberManifest = path.join(memberDir, 'pyproject.toml')
+					if (fs.existsSync(memberManifest)) {
+						let memberParsed = parseToml(fs.readFileSync(memberManifest, 'utf-8'))
+						let name = memberParsed.project?.name || memberParsed.tool?.poetry?.name
+						let version = memberParsed.project?.version || memberParsed.tool?.poetry?.version
+						if (name && version) {
+							let key = this._canonicalize(name)
+							currentPkg = { name, version, parents: new Set() }
+							packages.set(key, currentPkg)
+							collectingVia = false
+							continue
+						}
+					}
+				}
+				currentPkg = null
+				collectingVia = false
+				continue
+			}
+
 			if (child.type === 'requirement') {
 				let nameNode = child.children.find(c => c.type === 'package')
 				if (!nameNode) { continue }
