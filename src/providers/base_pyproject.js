@@ -6,6 +6,7 @@ import { parse as parseToml } from 'smol-toml'
 
 import { getLicense } from '../license/license_utils.js'
 import Sbom from '../sbom.js'
+import { getCustom } from '../tools.js'
 
 const ecosystem = 'pip'
 
@@ -31,10 +32,73 @@ export default class Base_pyproject {
 
 	/**
 	 * @param {string} manifestDir
+	 * @param {Object} [opts={}]
 	 * @returns {boolean}
 	 */
-	validateLockFile(manifestDir) {
-		return fs.existsSync(path.join(manifestDir, this._lockFileName()))
+	validateLockFile(manifestDir, opts = {}) {
+		return this._findLockFileDir(manifestDir, opts) != null
+	}
+
+	/**
+	 * Walk up from manifestDir to find the directory containing the lock file.
+	 * Follows the same pattern as Base_javascript._findLockFileDir().
+	 * @param {string} manifestDir
+	 * @param {Object} [opts={}]
+	 * @returns {string|null}
+	 * @protected
+	 */
+	_findLockFileDir(manifestDir, opts = {}) {
+		const workspaceDir = getCustom('TRUSTIFY_DA_WORKSPACE_DIR', null, opts)
+		if (workspaceDir) {
+			const dir = path.resolve(workspaceDir)
+			return fs.existsSync(path.join(dir, this._lockFileName())) ? dir : null
+		}
+
+		let dir = path.resolve(manifestDir)
+		let parent = dir
+
+		do {
+			dir = parent
+
+			if (fs.existsSync(path.join(dir, this._lockFileName()))) {
+				return dir
+			}
+
+			if (this._isWorkspaceRoot(dir)) {
+				return null
+			}
+
+			parent = path.dirname(dir)
+		} while (parent !== dir)
+
+		return null
+	}
+
+	/**
+	 * Detect Python workspace root boundaries.
+	 * - uv: pyproject.toml with [tool.uv.workspace] section
+	 * - poetry: pyproject.toml with [tool.poetry] alongside poetry.lock
+	 * @param {string} dir
+	 * @returns {boolean}
+	 * @protected
+	 */
+	_isWorkspaceRoot(dir) {
+		const pyprojectPath = path.join(dir, 'pyproject.toml')
+		if (!fs.existsSync(pyprojectPath)) {
+			return false
+		}
+		try {
+			const content = parseToml(fs.readFileSync(pyprojectPath, 'utf-8'))
+			if (content.tool?.uv?.workspace) {
+				return true
+			}
+			if (content.tool?.poetry && fs.existsSync(path.join(dir, 'poetry.lock'))) {
+				return true
+			}
+		} catch (_) {
+			// ignore parse errors
+		}
+		return false
 	}
 
 	/**
@@ -284,7 +348,8 @@ export default class Base_pyproject {
 		let content = fs.readFileSync(manifest, 'utf-8')
 		let parsed = parseToml(content)
 
-		let { directDeps, graph } = await this._getDependencyData(manifestDir, parsed, opts)
+		let lockFileDir = this._findLockFileDir(manifestDir, opts) || manifestDir
+		let { directDeps, graph } = await this._getDependencyData(lockFileDir, parsed, opts)
 
 		let ignoredDeps = this._getIgnoredDeps(manifest)
 		let dependencies = this._buildDependencyTree(graph, directDeps, ignoredDeps, includeTransitive)
