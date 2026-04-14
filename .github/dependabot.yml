@@ -1,12 +1,14 @@
 # yaml-language-server: $schema=https://www.schemastore.org/dependabot-2.0.json
 version: 2
 updates:
+  # ── Production dependencies ──────────────────────────────────────────
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "daily"
     exclude-paths:
       - "test/providers/tst_manifests/**"
+      - "test/providers/provider_manifests/**"
     groups:
       npm-dependencies:
         patterns:
@@ -27,21 +29,72 @@ updates:
       github-actions:
         patterns:
           - "*"
+
+  # ── Test fixture manifests (suppress all updates including security) ─
+  # These directories contain intentionally pinned dependencies used as
+  # test fixtures. They must NOT be updated by dependabot.
+  - package-ecosystem: "npm"
+    directories:
+      - "/test/providers/tst_manifests/npm/**"
+      - "/test/providers/tst_manifests/pnpm/**"
+      - "/test/providers/tst_manifests/yarn-berry/**"
+      - "/test/providers/tst_manifests/yarn-classic/**"
+      - "/test/providers/tst_manifests/js-common/**"
+      - "/test/providers/provider_manifests/npm/**"
+      - "/test/providers/provider_manifests/pnpm/**"
+      - "/test/providers/provider_manifests/yarn-berry/**"
+      - "/test/providers/provider_manifests/yarn-classic/**"
+    schedule:
+      interval: "monthly"
+    labels: []
+    ignore:
+      - dependency-name: "*"
   - package-ecosystem: "pip"
-    directory: "/"
+    directories:
+      - "/test/providers/tst_manifests/pip/**"
     schedule:
-      interval: "weekly"
-    exclude-paths:
-      - "test/providers/tst_manifests/**"
+      interval: "monthly"
+    labels: []
+    ignore:
+      - dependency-name: "*"
+  - package-ecosystem: "uv"
+    directories:
+      - "/test/providers/tst_manifests/pyproject/**"
+    schedule:
+      interval: "monthly"
+    labels: []
+    ignore:
+      - dependency-name: "*"
   - package-ecosystem: "maven"
-    directory: "/"
+    directories:
+      - "/test/providers/tst_manifests/maven/**"
     schedule:
-      interval: "weekly"
-    exclude-paths:
-      - "test/providers/tst_manifests/**"
+      interval: "monthly"
+    labels: []
+    ignore:
+      - dependency-name: "*"
+  - package-ecosystem: "gradle"
+    directories:
+      - "/test/providers/tst_manifests/gradle/**"
+    schedule:
+      interval: "monthly"
+    labels: []
+    ignore:
+      - dependency-name: "*"
+  - package-ecosystem: "cargo"
+    directories:
+      - "/test/providers/tst_manifests/cargo/**"
+      - "/test/providers/provider_manifests/cargo/**"
+    schedule:
+      interval: "monthly"
+    labels: []
+    ignore:
+      - dependency-name: "*"
   - package-ecosystem: "gomod"
-    directory: "/"
+    directories:
+      - "/test/providers/tst_manifests/golang/**"
     schedule:
-      interval: "weekly"
-    exclude-paths:
-      - "test/providers/tst_manifests/**"
+      interval: "monthly"
+    labels: []
+    ignore:
+      - dependency-name: "*"
