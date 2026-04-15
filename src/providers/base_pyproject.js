@@ -168,8 +168,10 @@ export default class Base_pyproject {
 
 	/**
 	 * Resolve dependencies using the tool-specific command and parser.
+	 *
 	 * @param {string} manifestDir - directory containing the target pyproject.toml
-	 * @param {string} workspaceDir - workspace root (where the lock file lives), or same as manifestDir for standalone projects
+	 * @param {string} workspaceDir - workspace root (where the lock file lives);
+	 *   only used by providers that need workspace-level resolution (e.g. uv)
 	 * @param {object} parsed - parsed pyproject.toml
 	 * @param {Object} opts
 	 * @returns {Promise<DependencyData>}
