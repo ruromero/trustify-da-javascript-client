@@ -6,6 +6,7 @@ import { parse as parseToml } from 'smol-toml'
 import { environmentVariableIsPopulated, getCustomPath, invokeCommand } from '../tools.js'
 
 import Base_pyproject from './base_pyproject.js'
+import { evaluateMarker } from './marker_evaluator.js'
 import { getParser, getPinnedVersionQuery } from './requirements_parser.js'
 
 export default class Python_uv extends Base_pyproject {
@@ -97,6 +98,16 @@ export default class Python_uv extends Base_pyproject {
 			if (child.type === 'requirement') {
 				let nameNode = child.children.find(c => c.type === 'package')
 				if (!nameNode) { continue }
+
+				let markerNode = child.children.find(c => c.type === 'marker_spec')
+				if (markerNode) {
+					let markerText = markerNode.text.replace(/^\s*;\s*/, '')
+					if (!evaluateMarker(markerText)) {
+						currentPkg = null
+						collectingVia = false
+						continue
+					}
+				}
 
 				let name = nameNode.text
 				let version = null
