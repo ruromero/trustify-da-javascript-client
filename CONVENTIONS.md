@@ -1,6 +1,6 @@
 # Coding Conventions
 
-<!-- This file documents project-specific coding standards for exhort-javascript-api. -->
+<!-- This file documents project-specific coding standards for trustify-da-javascript-client. -->
 
 ## Language and Framework
 
@@ -89,6 +89,10 @@ test/
 - Likely Conventional Commits format
 - DCO (Developer Certificate of Origin) required
 - Semantic versioning (`0.3.0` in package.json)
+
+## Test Fixtures
+
+- **Dependabot suppression**: Test fixture directories contain intentionally pinned (sometimes vulnerable) dependencies. When adding a new test fixture directory with a manifest file, review `.github/dependabot.yml` to ensure the new path is covered. Non-npm ecosystems are suppressed via root-level `ignore: [{dependency-name: "*"}]` entries. npm fixtures use per-directory entries with `/**` globs; add the parent directory if a new npm/pnpm/yarn fixture tree is introduced.
 
 ## Dependencies
 
