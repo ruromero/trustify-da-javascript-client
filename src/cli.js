@@ -511,7 +511,15 @@ const sbom = {
 			desc: 'Workspace root directory (for monorepos; lock file is expected here)',
 			type: 'string',
 			normalize: true,
-		}
+		},
+		sourceUrl: {
+			desc: 'Source repository URL (added to SBOM metadata as VCS reference)',
+			type: 'string',
+		},
+		sourceCommit: {
+			desc: 'Source git commit SHA (added to SBOM metadata as property)',
+			type: 'string',
+		},
 	}),
 	handler: async args => {
 		let manifest = args['/path/to/manifest']
@@ -522,6 +530,18 @@ const sbom = {
 		} catch (err) {
 			console.error(JSON.stringify({ error: `Failed to generate SBOM: ${err.message}` }, null, 2))
 			process.exit(1)
+		}
+		if (args.sourceUrl || args.sourceCommit) {
+			if (!result.metadata) result.metadata = {}
+			if (args.sourceUrl) {
+				if (!result.metadata.component) result.metadata.component = {}
+				if (!result.metadata.component.externalReferences) result.metadata.component.externalReferences = []
+				result.metadata.component.externalReferences.push({ type: 'vcs', url: args.sourceUrl })
+			}
+			if (args.sourceCommit) {
+				if (!result.metadata.properties) result.metadata.properties = []
+				result.metadata.properties.push({ name: 'rhda:source:commit', value: args.sourceCommit })
+			}
 		}
 		const json = JSON.stringify(result, null, 2)
 		if (args.output) {
